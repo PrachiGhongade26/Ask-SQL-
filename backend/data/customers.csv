@@ -1,0 +1,201 @@
+customer_id,name,city,state,signup_date
+1,Warhi Prakash,Gandhinagar,Haryana,2025-10-10
+2,Adweta Dalal,Mysore,Telangana,2026-05-19
+3,Arya Zacharia,Bidhannagar,Karnataka,2024-09-25
+4,Naveen Verma,Nanded,Nagaland,2026-05-19
+5,Sanaya Bedi,Secunderabad,Punjab,2026-06-18
+6,Yashica Kumer,Bilaspur,Kerala,2025-05-12
+7,Urmi Sharaf,Kirari Suleman Nagar,Maharashtra,2025-01-07
+8,Aradhana Patel,Aurangabad,Karnataka,2025-01-08
+9,Udarsh Bansal,Satna,Maharashtra,2025-12-19
+10,Mohammed Arya,Nangloi Jat,Uttarakhand,2026-02-10
+11,Dayamai Dugar,Ratlam,Maharashtra,2025-09-03
+12,Abeer Chaudhari,Ujjain,Andhra Pradesh,2025-09-06
+13,Omkaar Om,Varanasi,Odisha,2025-03-09
+14,Sachi Keer,Belgaum,Jharkhand,2026-06-02
+15,Yatin Dixit,Shahjahanpur,Meghalaya,2025-03-18
+16,Agastya Barman,Tinsukia,Odisha,2026-01-16
+17,Jeet Saraf,Pune,Sikkim,2026-01-28
+18,Yahvi Bhatia,Agartala,Haryana,2025-01-01
+19,Ethan Mammen,Gulbarga,West Bengal,2024-10-27
+20,Ekaraj Kala,Aizawl,Andhra Pradesh,2025-10-27
+21,Harish Loyal,Bulandshahr,Arunachal Pradesh,2025-03-31
+22,Geetika Bawa,Jamalpur,Rajasthan,2025-06-07
+23,Radha Sastry,Muzaffarpur,Manipur,2025-11-10
+24,Hema Khanna,Hindupur,Meghalaya,2026-05-30
+25,Nandini Ratti,Kota,Rajasthan,2025-04-15
+26,Farhan Char,Anand,Goa,2025-04-03
+27,Nathaniel Khanna,Kirari Suleman Nagar,Bihar,2024-08-04
+28,Gaurang Chahal,Phagwara,West Bengal,2025-03-19
+29,Anvi Choudhry,Jammu,Meghalaya,2025-05-19
+30,Ronith Mutti,Giridih,Jharkhand,2025-01-22
+31,Tanveer Bassi,Hindupur,Uttarakhand,2025-04-24
+32,Maanas Parmer,Kolhapur,Sikkim,2025-09-14
+33,Ishanvi Dara,Dehri,Uttarakhand,2025-07-23
+34,Wakeeta Ahuja,Noida,Himachal Pradesh,2025-08-07
+35,Chandresh Dutt,Nangloi Jat,Maharashtra,2026-05-23
+36,Qasim Kapadia,Aurangabad,Meghalaya,2025-09-06
+37,Alexander Mital,Sasaram,Arunachal Pradesh,2025-08-13
+38,Zansi Dutt,Raebareli,Himachal Pradesh,2026-04-11
+39,Hemangini Dey,Jalandhar,Rajasthan,2024-09-04
+40,Indrajit Bhalla,Shimoga,Mizoram,2026-04-28
+41,Garima Sarna,Madanapalle,Andhra Pradesh,2025-10-10
+42,Arjun Sheth,Kamarhati,Nagaland,2026-05-13
+43,Abeer Setty,Indore,Punjab,2026-02-27
+44,Anusha Sahota,Sagar,Goa,2025-03-01
+45,Lekha Sabharwal,Kamarhati,Jharkhand,2025-12-19
+46,Edhitha Dugal,Tirunelveli,Maharashtra,2024-08-13
+47,Krish Chaudhari,Jalna,Odisha,2025-02-02
+48,Rachit Talwar,Vijayanagaram,Manipur,2025-07-28
+49,Fitan Thaman,Chittoor,Kerala,2025-03-07
+50,Akshay Sampath,Surendranagar Dudhrej,Punjab,2025-06-08
+51,Anjali Narayan,Karawal Nagar,Rajasthan,2025-06-09
+52,Gabriel Biswas,Miryalaguda,Mizoram,2024-10-17
+53,Andrew Gupta,Bikaner,Tamil Nadu,2026-02-02
+54,Rehaan Pathak,Lucknow,Arunachal Pradesh,2025-01-01
+55,Isaiah Devi,Raiganj,Manipur,2025-03-21
+56,Hemal Madan,Srikakulam,Assam,2026-06-19
+57,Jhalak Kadakia,Eluru,Gujarat,2025-03-01
+58,Barkha Ben,Panvel,Tripura,2026-01-26
+59,Jagvi Thakur,Tadepalligudem,West Bengal,2026-05-09
+60,Owen Bahl,Bidar,Goa,2025-10-28
+61,Azaan Kamdar,Jaipur,Odisha,2024-08-09
+62,Urvi Nigam,Begusarai,Tripura,2025-12-03
+63,Udant Taneja,Adoni,Arunachal Pradesh,2025-11-12
+64,Leena Biswas,Sultan Pur Majra,Haryana,2025-10-10
+65,Yashawini Nanda,Phusro,Manipur,2024-11-02
+66,Libni Agrawal,Solapur,Madhya Pradesh,2025-11-01
+67,Onveer Sankar,Rourkela,Rajasthan,2025-11-18
+68,Ijaya Hegde,Tirunelveli,Haryana,2024-12-27
+69,Kashish Shukla,Morena,Tripura,2025-07-17
+70,Max Dani,Ahmednagar,Kerala,2025-01-31
+71,Janaki Jhaveri,Asansol,Karnataka,2024-08-11
+72,Faris Tak,Haridwar,Sikkim,2025-10-29
+73,Vincent Panchal,Satara,Punjab,2024-12-08
+74,Harshil Reddy,Kishanganj,Telangana,2025-07-02
+75,Abdul Kapadia,Anand,Karnataka,2024-11-14
+76,Mahika Rajan,Etawah,Sikkim,2025-06-26
+77,Omkaar Prakash,Bareilly,Mizoram,2024-09-08
+78,Umang Shankar,Bijapur,Odisha,2026-04-14
+79,Daksha Choudhary,Nagaon,Chhattisgarh,2026-05-16
+80,Yashawini Maharaj,Gaya,Jharkhand,2025-09-13
+81,Oviya Bhatnagar,Bardhaman,Odisha,2026-03-12
+82,Chandran Nagar,Kakinada,West Bengal,2026-06-11
+83,Gabriel Sahni,Siwan,Sikkim,2025-07-13
+84,Frado Ratta,Amritsar,West Bengal,2024-08-06
+85,Watika Dutta,Udaipur,Mizoram,2025-03-17
+86,Abeer Baral,Patna,Haryana,2025-03-11
+87,Oliver Vora,Noida,Bihar,2025-11-02
+88,Jeremiah Basu,Ludhiana,Telangana,2025-12-05
+89,Faraj Parekh,Mangalore,Mizoram,2024-12-02
+90,Radhika Mander,Vadodara,Tripura,2025-12-15
+91,Zilmil Ben,Asansol,Goa,2025-08-06
+92,Udyati Wason,Aizawl,Mizoram,2026-05-22
+93,Samarth Prashad,Bettiah,Kerala,2025-08-16
+94,Arjun Lata,Patna,Uttar Pradesh,2025-11-26
+95,Zehaan Trivedi,Ongole,Punjab,2024-11-28
+96,Nathan Pai,Pune,Tamil Nadu,2026-03-01
+97,Ikbal Arya,Davanagere,Manipur,2025-05-27
+98,Mahika Mitra,Hindupur,Haryana,2025-11-24
+99,Gagan Chokshi,Katihar,West Bengal,2025-11-03
+100,Oeshi Gour,Sonipat,Arunachal Pradesh,2026-04-12
+101,Leela Malhotra,Chandrapur,Maharashtra,2024-12-24
+102,Warhi Bhatnagar,Serampore,Andhra Pradesh,2025-08-14
+103,Rehaan Khalsa,Rourkela,Chhattisgarh,2025-07-26
+104,Xavier Sahni,Tirupati,Manipur,2026-01-30
+105,Divya Ahuja,Sangli-Miraj & Kupwad,Tamil Nadu,2025-09-29
+106,Harrison Mitter,Kumbakonam,Tamil Nadu,2026-01-27
+107,Irya Deo,Madanapalle,Gujarat,2025-09-18
+108,Oscar Lad,Aurangabad,Arunachal Pradesh,2025-11-11
+109,Saanvi Reddy,Kolkata,Madhya Pradesh,2025-10-23
+110,Udarsh Ramanathan,Morena,Assam,2025-10-19
+111,Gaurang Mandal,Vasai-Virar,Kerala,2025-10-14
+112,Yoshita Sahni,Karawal Nagar,Jharkhand,2025-12-22
+113,Ekavir Borra,Madurai,Karnataka,2025-06-14
+114,Bhanumati Ganesan,Lucknow,Tripura,2025-05-23
+115,Indali Bhatti,Bhavnagar,Sikkim,2026-03-05
+116,Chameli Kala,Kakinada,Goa,2025-03-06
+117,Tanveer Mand,Ajmer,Punjab,2025-05-02
+118,Nitesh Gupta,Kishanganj,Maharashtra,2024-08-08
+119,Nirja Gandhi,Ramagundam,Rajasthan,2025-11-18
+120,Anvi Tailor,Ichalkaranji,Uttarakhand,2025-12-14
+121,Indrajit Kanda,Dehradun,Meghalaya,2025-03-05
+122,Finn Bora,Thrissur,Kerala,2025-01-26
+123,Jagrati Edwin,Deoghar,Assam,2024-10-19
+124,Samesh Saha,Pudukkottai,Uttarakhand,2025-01-04
+125,Vasatika Divan,Panihati,Andhra Pradesh,2025-02-27
+126,Vedika Narain,Kadapa,Haryana,2025-11-09
+127,Krisha Vaidya,Ozhukarai,Uttarakhand,2025-04-30
+128,Nisha Mistry,Maheshtala,Uttarakhand,2026-06-10
+129,Ayushman Kohli,Anand,Odisha,2025-02-13
+130,Lavanya Deshpande,Bharatpur,Odisha,2026-05-02
+131,Radha Andra,Ujjain,Gujarat,2025-09-04
+132,Girik Rama,Bhalswa Jahangir Pur,Telangana,2025-05-24
+133,Charita Swamy,Nanded,Uttarakhand,2024-09-11
+134,Jyoti Saini,Bilaspur,Tripura,2025-11-28
+135,Sanaya Gopal,Tadepalligudem,Chhattisgarh,2024-08-20
+136,Arya Lall,Warangal,Himachal Pradesh,2024-08-19
+137,Yatin Mitra,Patna,Himachal Pradesh,2025-11-04
+138,Chandani Peri,Jamnagar,Meghalaya,2025-04-15
+139,Hemani Ghosh,Durgapur,Manipur,2025-01-18
+140,Sudiksha Sheth,Ujjain,Himachal Pradesh,2026-06-01
+141,Pahal Chander,Mathura,Telangana,2026-01-07
+142,Lipika Dave,Raurkela Industrial Township,Tripura,2025-02-24
+143,Sai Batta,Naihati,Andhra Pradesh,2026-02-03
+144,Rajeshri Pal,Malda,Maharashtra,2025-01-17
+145,Raksha Dalal,Siwan,Manipur,2025-06-18
+146,Inaya Ranganathan,Morbi,Andhra Pradesh,2025-06-13
+147,Pranit Kala,Bikaner,Bihar,2024-07-22
+148,Idika Sachar,Dibrugarh,Maharashtra,2024-12-07
+149,Ekanta Goswami,Bhusawal,Mizoram,2025-10-31
+150,Vihaan Bahl,Haridwar,Madhya Pradesh,2025-01-18
+151,Ayush Mahal,Burhanpur,Manipur,2026-01-30
+152,Ishita Oommen,Bhatpara,Goa,2025-09-25
+153,Kevin Rajagopal,Guntakal,Jharkhand,2025-04-14
+154,Lekha Luthra,Raichur,Nagaland,2026-03-27
+155,Samar Dani,Malda,Uttar Pradesh,2026-02-25
+156,Kashvi Manne,Tiruvottiyur,Maharashtra,2025-06-17
+157,Logan Mandal,Narasaraopet,Bihar,2026-02-25
+158,Faras Kuruvilla,New Delhi,Maharashtra,2025-12-16
+159,Divya Tak,Gangtok,Tripura,2025-01-27
+160,Parth Nadig,Chandigarh,Assam,2025-11-08
+161,Xiti Walia,Vijayanagaram,Tamil Nadu,2026-05-06
+162,Eesha Samra,Alappuzha,Tamil Nadu,2025-11-25
+163,Theodore Sengupta,Maheshtala,Tripura,2025-02-05
+164,Abhimanyu Pingle,Bikaner,Nagaland,2024-12-10
+165,Nathaniel Narula,Noida,Uttarakhand,2024-10-11
+166,Sneha Mallick,Nanded,Kerala,2024-08-30
+167,Madhav Agarwal,Ajmer,Sikkim,2025-08-18
+168,Geetika Chanda,Proddatur,Nagaland,2026-03-21
+169,Yashvi Kamdar,Dharmavaram,Goa,2026-02-19
+170,Nihal Sinha,Davanagere,Arunachal Pradesh,2026-06-11
+171,Jalsa Khalsa,Sagar,Rajasthan,2024-08-19
+172,Tejas Halder,Ulhasnagar,Tripura,2024-09-16
+173,Dalbir Sur,Shimoga,Manipur,2026-04-01
+174,Adya Sharma,Ambarnath,Karnataka,2024-08-30
+175,Anvi Madan,Ranchi,Telangana,2025-02-03
+176,Ikbal Vasa,Tiruppur,Rajasthan,2025-03-28
+177,Girik Varkey,Moradabad,Tripura,2025-10-14
+178,Aarnav Sachdev,New Delhi,Haryana,2025-08-10
+179,Upkaar Thakur,Bongaigaon,Chhattisgarh,2025-12-07
+180,Nandini Loyal,Ramgarh,Mizoram,2024-10-07
+181,David Pingle,Sikar,Jharkhand,2026-04-10
+182,Elijah Natarajan,Pune,Tamil Nadu,2026-01-04
+183,Chakradhar Yadav,Jabalpur,Karnataka,2025-06-23
+184,Upasna Gaba,Bidhannagar,Bihar,2025-03-05
+185,Yatin Dhar,Avadi,Telangana,2025-02-08
+186,Anika Sibal,Hazaribagh,Rajasthan,2026-01-30
+187,Idika Ramaswamy,Meerut,Punjab,2025-02-01
+188,Fitan Rai,Bhind,Odisha,2025-09-02
+189,Omaja Krishnamurthy,Rampur,Maharashtra,2026-01-19
+190,Ekavir Bumb,Jaipur,Odisha,2024-11-30
+191,Osha Master,Sikar,Punjab,2025-11-15
+192,Warjas Kala,Unnao,Madhya Pradesh,2025-05-22
+193,Balveer Krish,Khammam,Andhra Pradesh,2025-05-07
+194,Anjali Borra,Ranchi,Meghalaya,2025-08-18
+195,Diya Krishnan,Gudivada,Mizoram,2024-09-25
+196,Anirudh Dasgupta,Cuttack,Odisha,2025-05-29
+197,Balvan Sur,Bally,Arunachal Pradesh,2025-07-23
+198,David Sanghvi,Gaya,Karnataka,2025-02-23
+199,Jeremiah Bala,Karawal Nagar,Assam,2024-11-07
+200,Rehaan Mukhopadhyay,Alwar,Manipur,2026-02-08
