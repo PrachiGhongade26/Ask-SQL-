@@ -1,43 +1,4 @@
 """
-DuckDB connection and sample data loader for NL-to-SQL Assistant.
-"""
-import duckdb
-import os
-
-DB_PATH = "data/app.duckdb"
-DATA_DIR = "data"
-
-
-def get_connection():
-    """Returns a DuckDB connection."""
-    conn = duckdb.connect(DB_PATH)
-    return conn
-
-
-def load_sample_data(conn):
-    """Loads CSV files from data/ into DuckDB tables."""
-    tables = ["customers", "products", "orders", "order_items"]
-
-    for table in tables:
-        csv_path = os.path.join(DATA_DIR, f"{table}.csv")
-        conn.execute(f"""
-            CREATE OR REPLACE TABLE {table} AS
-            SELECT * FROM read_csv_auto('{csv_path}')
-        """)
-        print(f"Loaded table: {table}")
-
-
-if __name__ == "__main__":
-    conn = get_connection()
-    print("Connected to DuckDB successfully.")
-    load_sample_data(conn)
-    print("All tables loaded.")
-
-    # Quick test query
-    result = conn.execute("SELECT COUNT(*) FROM customers").fetchone()
-    print(f"Customers table row count: {result[0]}")
-
-"""
 DuckDB connection, dynamic CSV loading, and schema introspection for AskSQL.
 """
 import duckdb
@@ -46,6 +7,12 @@ import re
 
 DB_PATH = "data/app.duckdb"
 DATA_DIR = "data"
+
+# Max file size for uploads, in bytes (10 MB)
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+
+# Max rows returned by /ask, to avoid huge payloads from broad questions
+MAX_RESULT_ROWS = 1000
 
 
 def get_connection():
@@ -80,6 +47,16 @@ def sanitize_table_name(filename: str) -> str:
     return name
 
 
+def is_valid_table_name(name: str) -> bool:
+    """
+    Validates a table name against the same pattern sanitize_table_name()
+    produces. Used to guard against SQL injection when a table name is
+    interpolated into a query (DuckDB doesn't support parameterized
+    identifiers, only parameterized values).
+    """
+    return bool(re.fullmatch(r"[a-z][a-z0-9_]*", name))
+
+
 def load_uploaded_csv(conn, file_path: str, table_name: str) -> str:
     """
     Loads a CSV file from disk into a DuckDB table.
@@ -92,11 +69,31 @@ def load_uploaded_csv(conn, file_path: str, table_name: str) -> str:
     Returns:
         The table name that was created.
     """
+    if not is_valid_table_name(table_name):
+        raise ValueError(f"Invalid table name: {table_name}")
+
     conn.execute(f"""
         CREATE OR REPLACE TABLE {table_name} AS
         SELECT * FROM read_csv_auto('{file_path}')
     """)
     return table_name
+
+
+def list_tables(conn) -> list[str]:
+    """Returns all user table names currently in the database."""
+    rows = conn.execute("""
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'main'
+        ORDER BY table_name
+    """).fetchall()
+    return [r[0] for r in rows]
+
+
+def drop_table(conn, table_name: str) -> None:
+    """Drops a table by name, after validating it's a safe identifier."""
+    if not is_valid_table_name(table_name):
+        raise ValueError(f"Invalid table name: {table_name}")
+    conn.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
 def get_schema_string(conn, table_name: str | None = None) -> str:
@@ -114,22 +111,20 @@ def get_schema_string(conn, table_name: str | None = None) -> str:
         "TABLE sales(id INTEGER, region VARCHAR, amount DOUBLE, sale_date DATE)"
     """
     if table_name:
+        if not is_valid_table_name(table_name):
+            raise ValueError(f"Invalid table name: {table_name}")
         table_names = [table_name]
     else:
-        rows = conn.execute("""
-            SELECT table_name FROM information_schema.tables
-            WHERE table_schema = 'main'
-        """).fetchall()
-        table_names = [r[0] for r in rows]
+        table_names = list_tables(conn)
 
     schema_parts = []
     for name in table_names:
-        columns = conn.execute(f"""
+        columns = conn.execute("""
             SELECT column_name, data_type
             FROM information_schema.columns
-            WHERE table_name = '{name}'
+            WHERE table_name = ?
             ORDER BY ordinal_position
-        """).fetchall()
+        """, [name]).fetchall()
         col_str = ", ".join(f"{col} {dtype}" for col, dtype in columns)
         schema_parts.append(f"TABLE {name}({col_str})")
 
