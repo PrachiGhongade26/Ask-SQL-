@@ -1,3 +1,9 @@
+# TODO: test /upload with invalid/corrupt file formats
+# TODO: test /tables with empty database
+# TODO: test /ask with malformed or ambiguous questions
+# TODO: add try/except around /ask for Groq API timeout/failure
+
+
 import os
 import re
 import shutil
