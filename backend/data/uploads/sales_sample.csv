@@ -1,0 +1,11 @@
+order_id,customer_name,region,product,amount,sale_date
+1,Ananya Rao,West,Laptop,55000,2025-01-12
+2,Rohan Mehta,North,Mouse,600,2025-01-15
+3,Priya Nair,South,Keyboard,1200,2025-02-02
+4,Vikram Singh,East,Monitor,9500,2025-02-10
+5,Sneha Patil,West,Laptop,58000,2025-03-05
+6,Arjun Kumar,North,Headphones,2200,2025-03-18
+7,Kavya Reddy,South,Monitor,9800,2025-04-01
+8,Aditya Joshi,East,Mouse,650,2025-04-22
+9,Meera Iyer,West,Keyboard,1300,2025-05-09
+10,Karan Malhotra,North,Laptop,56000,2025-05-30

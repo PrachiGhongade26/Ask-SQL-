@@ -11,7 +11,7 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
-from database import (
+from .database import  (
     get_connection,
     load_uploaded_csv,
     sanitize_table_name,
@@ -22,10 +22,19 @@ from database import (
     MAX_UPLOAD_SIZE,
     MAX_RESULT_ROWS,
 )
-from nl2sql import generate_sql
+from .nl2sql import generate_sql
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 UPLOAD_DIR = "data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
