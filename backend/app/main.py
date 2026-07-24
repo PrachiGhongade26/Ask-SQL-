@@ -179,14 +179,25 @@ async def ask_question(request: AskRequest):
         schema = get_schema_string(conn, request.table_name)
 
         try:
-            sql = generate_sql(request.question, schema)
+            generation_result = generate_sql(request.question, schema)
         except RuntimeError as e:
             raise HTTPException(status_code=502, detail=f"SQL generation failed: {e}")
 
-        if sql.strip().startswith("--"):
+        if generation_result["confidence"] == "low":
             return {
                 "question": request.question,
-                "sql": sql,
+                "sql": None,
+                "results": [],
+                "clarifying_question": generation_result["clarifying_question"],
+                "message": "Your question was ambiguous. Please clarify and ask again.",
+            }
+
+        sql = generation_result["sql"]
+
+        if not sql:
+            return {
+                "question": request.question,
+                "sql": None,
                 "results": [],
                 "message": "The question could not be answered with the available data.",
             }
