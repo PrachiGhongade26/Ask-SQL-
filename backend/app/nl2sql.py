@@ -140,6 +140,44 @@ def generate_sql(question: str, schema: str, temperature: float = 0.1) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Query plan commentary
+# ---------------------------------------------------------------------------
+
+EXPLAIN_SYSTEM_PROMPT = """You are a senior database engineer reviewing a DuckDB query plan.
+
+You will be given a SQL query and its EXPLAIN output (the query plan). Comment briefly (2-4 sentences) in plain English on:
+1. Whether the query looks efficient or has any obvious performance concerns (e.g. full table scans on large tables, missing filters, unnecessary joins).
+2. One concrete suggestion if there's an issue, or a short confirming note if there isn't.
+
+Keep your response to plain text only. No JSON, no markdown, no headers.
+"""
+
+
+def explain_sql(sql: str, plan: str) -> str:
+    """
+    Sends a SQL query and its EXPLAIN plan to Groq and returns a plain-English
+    commentary on whether the query looks efficient.
+    """
+    messages = [
+        {"role": "system", "content": EXPLAIN_SYSTEM_PROMPT},
+        {"role": "user", "content": f"SQL:\n{sql}\n\nQuery plan:\n{plan}"},
+    ]
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0.2,
+            max_tokens=300,
+        )
+    except Exception as e:
+        raise RuntimeError(f"Groq API call failed during explain: {e}") from e
+
+    return response.choices[0].message.content.strip()
+
+
+
+# ---------------------------------------------------------------------------
 # Quick manual test (run: python app/nl2sql.py)
 # ---------------------------------------------------------------------------
 

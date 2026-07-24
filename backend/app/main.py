@@ -4,12 +4,14 @@
 # TODO: add try/except around /ask for Groq API timeout/failure
 
 
+
 import os
 import re
 import shutil
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
+from .nl2sql import generate_sql, explain_sql
 
 from .database import  (
     get_connection,
@@ -224,6 +226,85 @@ async def ask_question(request: AskRequest):
             "sql": sql,
             "results": results,
             "truncated": len(results) == MAX_RESULT_ROWS,
+        }
+    finally:
+        conn.close()
+
+@app.post("/explain")
+async def explain_question(request: AskRequest):
+    """
+    Takes a natural language question, converts it to SQL via Groq,
+    but instead of executing it, runs DuckDB's EXPLAIN and asks Groq
+    to comment on whether the query plan looks efficient.
+    """
+    if not is_valid_table_name(request.table_name):
+        raise HTTPException(status_code=400, detail="Invalid table name.")
+
+    if not request.question or not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    conn = get_connection()
+    try:
+        existing = list_tables(conn)
+        if request.table_name not in existing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Table '{request.table_name}' not found. Upload it first via /upload."
+            )
+
+        schema = get_schema_string(conn, request.table_name)
+
+        try:
+            generation_result = generate_sql(request.question, schema)
+        except RuntimeError as e:
+            raise HTTPException(status_code=502, detail=f"SQL generation failed: {e}")
+
+        if generation_result["confidence"] == "low":
+            return {
+                "question": request.question,
+                "sql": None,
+                "plan": None,
+                "commentary": None,
+                "clarifying_question": generation_result["clarifying_question"],
+                "message": "Your question was ambiguous. Please clarify and ask again.",
+            }
+
+        sql = generation_result["sql"]
+
+        if not sql:
+            return {
+                "question": request.question,
+                "sql": None,
+                "plan": None,
+                "commentary": None,
+                "message": "The question could not be answered with the available data.",
+            }
+
+        if not is_safe_select(sql):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Generated query was rejected for safety reasons. SQL was: {sql}"
+            )
+
+        try:
+            plan_result = conn.execute(f"EXPLAIN {sql}").fetchall()
+            plan_text = "\n".join(row[-1] for row in plan_result)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to generate query plan: {e}. SQL was: {sql}"
+            )
+
+        try:
+            commentary = explain_sql(sql, plan_text)
+        except RuntimeError as e:
+            commentary = f"(Commentary unavailable: {e})"
+
+        return {
+            "question": request.question,
+            "sql": sql,
+            "plan": plan_text,
+            "commentary": commentary,
         }
     finally:
         conn.close()
