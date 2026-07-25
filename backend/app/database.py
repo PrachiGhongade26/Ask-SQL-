@@ -142,3 +142,40 @@ if __name__ == "__main__":
 
     print("\nSchema for all tables:")
     print(get_schema_string(conn))
+
+
+def init_feedback_table(conn):
+    """Creates the feedback table and its id sequence if they don't exist yet."""
+    conn.execute("CREATE SEQUENCE IF NOT EXISTS feedback_id_seq START 1")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id BIGINT PRIMARY KEY DEFAULT nextval('feedback_id_seq'),
+            question VARCHAR,
+            sql VARCHAR,
+            table_name VARCHAR,
+            rating VARCHAR,
+            created_at TIMESTAMP DEFAULT current_timestamp
+        )
+    """)
+
+
+def insert_feedback(conn, question: str, sql: str, table_name: str, rating: str) -> None:
+    """Inserts one feedback row (rating is 'up' or 'down')."""
+    conn.execute("""
+        INSERT INTO feedback (question, sql, table_name, rating)
+        VALUES (?, ?, ?, ?)
+    """, [question, sql, table_name, rating])
+
+
+def get_feedback_stats(conn) -> dict:
+    """Returns up/down counts and total from the feedback table."""
+    rows = conn.execute("""
+        SELECT rating, COUNT(*) FROM feedback GROUP BY rating
+    """).fetchall()
+
+    stats = {"up": 0, "down": 0}
+    for rating, count in rows:
+        if rating in stats:
+            stats[rating] = count
+    stats["total"] = stats["up"] + stats["down"]
+    return stats

@@ -21,9 +21,13 @@ from .database import  (
     list_tables,
     drop_table,
     is_valid_table_name,
+    init_feedback_table,
+    insert_feedback,
+    get_feedback_stats,
     MAX_UPLOAD_SIZE,
     MAX_RESULT_ROWS,
 )
+
 from .nl2sql import generate_sql
 
 app = FastAPI()
@@ -40,11 +44,23 @@ app.add_middleware(
 UPLOAD_DIR = "data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+_startup_conn = get_connection()
+try:
+    init_feedback_table(_startup_conn)
+finally:
+    _startup_conn.close()
+
 
 class AskRequest(BaseModel):
     table_name: str
     question: str
 
+
+class FeedbackRequest(BaseModel):
+    question: str
+    sql: str
+    table_name: str
+    rating: str
 
 def is_safe_select(sql: str) -> bool:
     """
@@ -306,5 +322,36 @@ async def explain_question(request: AskRequest):
             "plan": plan_text,
             "commentary": commentary,
         }
+    finally:
+        conn.close()
+
+@app.post("/feedback")
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Records a thumbs up/down rating for a previously generated SQL query.
+    """
+    if request.rating not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="Rating must be 'up' or 'down'.")
+
+    if not request.question or not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    if not request.sql or not request.sql.strip():
+        raise HTTPException(status_code=400, detail="SQL cannot be empty.")
+
+    conn = get_connection()
+    try:
+        insert_feedback(conn, request.question, request.sql, request.table_name, request.rating)
+        return {"status": "recorded", "rating": request.rating}
+    finally:
+        conn.close()
+
+
+@app.get("/feedback/stats")
+def feedback_stats():
+    """Returns aggregate up/down counts for all recorded feedback."""
+    conn = get_connection()
+    try:
+        return get_feedback_stats(conn)
     finally:
         conn.close()
