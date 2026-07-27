@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0B0E14;
+  --surface: #12151D;
+  --surface-hover: #171B26;
+  --border: #232838;
+  --border-hover: #2E3548;
+  --text: #E8EAED;
+  --text-muted: #8B93A7;
+  --accent: #5EEAD4;
+  --accent-dim: rgba(94, 234, 212, 0.12);
+  --amber: #F0B429;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeSlideUp 0.45s ease-out; }
+
+@keyframes typeReveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.animate-type { animation: typeReveal 0.6s steps(40, end); }
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-pulse-dot { animation: pulseDot 1.2s ease-in-out infinite; }

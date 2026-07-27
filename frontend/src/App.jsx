@@ -1,0 +1,262 @@
+import { useState, useRef } from "react";
+import axios from "axios";
+
+const API_BASE = "http://localhost:8000";
+
+function Step({ number, title, active, done, children }) {
+  return (
+    <div className="relative pl-14">
+      <div
+        className={`absolute left-0 top-0 w-9 h-9 rounded-full flex items-center justify-center font-['JetBrains_Mono'] text-xs border transition-colors ${
+          done
+            ? "bg-[var(--accent-dim)] border-[var(--accent)] text-[var(--accent)]"
+            : active
+            ? "border-[var(--accent)] text-[var(--accent)]"
+            : "border-[var(--border)] text-[var(--text-muted)]"
+        }`}
+      >
+       {done ? "✓" : number}
+      </div>
+      <h2 className="font-['Space_Grotesk'] font-semibold text-[var(--text)] mb-3">
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  const [tableName, setTableName] = useState(null);
+  const [schema, setSchema] = useState(null);
+  const [rowCount, setRowCount] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const [question, setQuestion] = useState("");
+  const [sql, setSql] = useState(null);
+  const [results, setResults] = useState(null);
+  const [askError, setAskError] = useState(null);
+  const [asking, setAsking] = useState(false);
+
+  const doUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    setTableName(null);
+    setSql(null);
+    setResults(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axios.post(`${API_BASE}/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setTableName(res.data.table_name);
+      setSchema(res.data.schema);
+      setRowCount(res.data.row_count);
+    } catch (err) {
+      setUploadError(err.response?.data?.detail || "Upload failed. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    doUpload(e.dataTransfer.files[0]);
+  };
+
+  const handleAsk = async (e) => {
+    e.preventDefault();
+    if (!question.trim() || !tableName) return;
+    setAsking(true);
+    setAskError(null);
+    setSql(null);
+    setResults(null);
+
+    try {
+      const res = await axios.post(`${API_BASE}/ask`, {
+        table_name: tableName,
+        question,
+      });
+      setSql(res.data.sql);
+      setResults(res.data.results);
+    } catch (err) {
+      setAskError(err.response?.data?.detail || "Something went wrong. Try again.");
+    } finally {
+      setAsking(false);
+    }
+  };
+
+  const columns = results && results.length > 0 ? Object.keys(results[0]) : [];
+
+  return (
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] px-6 py-12">
+      <div className="max-w-2xl mx-auto">
+        <header className="mb-14">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[var(--accent)] font-['JetBrains_Mono'] text-sm">{'>'}</span>
+            <h1 className="font-['Space_Grotesk'] font-bold text-3xl tracking-tight">
+              Ask<span className="text-[var(--accent)]">SQL</span>
+            </h1>
+          </div>
+          <p className="text-[var(--text-muted)] text-sm">
+            English in. SQL out. Upload a CSV and ask.
+          </p>
+        </header>
+
+        <div className="relative flex flex-col gap-10">
+          {/* connecting line */}
+          <div className="absolute left-[17px] top-9 bottom-9 w-px bg-[var(--border)]" />
+
+          {/* Step 1 */}
+          <Step number="1" title="Upload your data" active={!tableName} done={!!tableName}>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`rounded-xl border border-dashed p-6 cursor-pointer transition-all ${
+                dragOver
+                  ? "border-[var(--accent)] bg-[var(--accent-dim)]"
+                  : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)]"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={(e) => doUpload(e.target.files[0])}
+                className="hidden"
+              />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] font-['JetBrains_Mono'] text-xs shrink-0">
+                  CSV
+                </div>
+                <div className="text-sm">
+                  <p className="text-[var(--text)]">
+                    {uploading ? "Uploading..." : "Drop a CSV here, or click to browse"}
+                  </p>
+                  <p className="text-[var(--text-muted)] text-xs mt-0.5">Max file size applies</p>
+                </div>
+              </div>
+            </div>
+
+            {uploadError && (
+              <p className="text-sm text-red-400 mt-3 font-['JetBrains_Mono']">{uploadError}</p>
+            )}
+
+            {tableName && (
+              <div className="animate-in mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 font-['JetBrains_Mono'] text-xs">
+                <div className="flex justify-between text-[var(--text-muted)] mb-1">
+                  <span>table</span>
+                  <span className="text-[var(--accent)]">{tableName}</span>
+                </div>
+                <div className="flex justify-between text-[var(--text-muted)] mb-2">
+                  <span>rows</span>
+                  <span className="text-[var(--text)]">{rowCount}</span>
+                </div>
+                <div className="text-[var(--text-muted)] break-all leading-relaxed border-t border-[var(--border)] pt-2">
+                  {schema}
+                </div>
+              </div>
+            )}
+          </Step>
+
+          {/* Step 2 */}
+          <Step number="2" title="Ask a question" active={!!tableName && !sql} done={!!sql}>
+            <form onSubmit={handleAsk} className="relative">
+              <div
+                className={`flex items-center gap-2 rounded-xl border bg-[var(--surface)] px-4 py-3 transition-colors ${
+                  tableName ? "border-[var(--border)] focus-within:border-[var(--accent)]" : "border-[var(--border)] opacity-50"
+                }`}
+              >
+                <span className="text-[var(--accent)] font-['JetBrains_Mono'] text-sm">{'>'}</span>
+                <input
+                  type="text"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  disabled={!tableName || asking}
+                  placeholder={tableName ? "How many orders per region?" : "Upload a CSV first"}
+                  className="flex-1 bg-transparent outline-none text-sm font-['JetBrains_Mono'] placeholder:text-[var(--text-muted)]"
+                />
+                <button
+                  type="submit"
+                  disabled={!tableName || asking || !question.trim()}
+                  className="text-xs font-['Space_Grotesk'] font-semibold px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0B0E14] disabled:bg-[var(--border)] disabled:text-[var(--text-muted)] transition-colors"
+                >
+                  {asking ? "Running" : "Run"}
+                </button>
+              </div>
+            </form>
+            {askError && (
+              <p className="text-sm text-red-400 mt-3 font-['JetBrains_Mono']">{askError}</p>
+            )}
+            {asking && (
+              <div className="flex gap-1 mt-3 pl-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse-dot" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse-dot" style={{ animationDelay: "0.15s" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse-dot" style={{ animationDelay: "0.3s" }} />
+              </div>
+            )}
+          </Step>
+
+          {/* Step 3 */}
+          {sql && (
+            <Step number="3" title="Result" done>
+              <div className="animate-in rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--surface-hover)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--amber)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--border-hover)]" />
+                  <span className="text-[var(--text-muted)] text-xs font-['JetBrains_Mono'] ml-2">generated.sql</span>
+                </div>
+                <pre className="animate-type font-['JetBrains_Mono'] text-xs text-[var(--accent)] p-4 overflow-x-auto whitespace-pre-wrap">
+                  {sql}
+                </pre>
+
+                {results && results.length > 0 ? (
+                  <div className="overflow-x-auto border-t border-[var(--border)]">
+                    <table className="min-w-full text-xs font-['JetBrains_Mono']">
+                      <thead>
+                        <tr className="bg-[var(--surface-hover)]">
+                          {columns.map((col) => (
+                            <th key={col} className="text-left px-4 py-2 text-[var(--text-muted)] font-medium border-b border-[var(--border)]">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.map((row, i) => (
+                          <tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-hover)] transition-colors">
+                            {columns.map((col) => (
+                              <td key={col} className="px-4 py-2 text-[var(--text)]">
+                                {String(row[col])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-[var(--text-muted)] text-xs font-['JetBrains_Mono'] p-4 border-t border-[var(--border)]">
+                    No rows returned.
+                  </p>
+                )}
+              </div>
+            </Step>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
