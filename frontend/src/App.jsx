@@ -1,7 +1,37 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 
 const API_BASE = "http://localhost:8000";
+
+function Navbar({ theme, onToggleTheme }) {
+  return (
+    <nav className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur">
+      <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[var(--accent)] font-['JetBrains_Mono'] text-sm">{'>'}</span>
+          <span className="font-['Space_Grotesk'] font-bold text-lg tracking-tight">
+            Ask<span className="text-[var(--accent)]">SQL</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <a href="#home" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+            Home
+          </a>
+          <a href="#about" className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+            About
+          </a>
+          <button
+            onClick={onToggleTheme}
+            className="text-xs font-['Space_Grotesk'] font-semibold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+          >
+            {theme === "dark" ? "Light mode" : "Dark mode"}
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 function Step({ number, title, active, done, children }) {
   return (
@@ -15,7 +45,7 @@ function Step({ number, title, active, done, children }) {
             : "border-[var(--border)] text-[var(--text-muted)]"
         }`}
       >
-       {done ? "✓" : number}
+        {done ? "✓" : number}
       </div>
       <h2 className="font-['Space_Grotesk'] font-semibold text-[var(--text)] mb-3">
         {title}
@@ -26,6 +56,20 @@ function Step({ number, title, active, done, children }) {
 }
 
 function App() {
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    if (theme === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
   const [tableName, setTableName] = useState(null);
   const [schema, setSchema] = useState(null);
   const [rowCount, setRowCount] = useState(null);
@@ -96,8 +140,10 @@ function App() {
   const columns = results && results.length > 0 ? Object.keys(results[0]) : [];
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] px-6 py-12">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <Navbar theme={theme} onToggleTheme={handleToggleTheme} />
+
+      <div id="home" className="max-w-2xl mx-auto px-6 py-12">
         <header className="mb-14">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[var(--accent)] font-['JetBrains_Mono'] text-sm">{'>'}</span>
@@ -111,10 +157,8 @@ function App() {
         </header>
 
         <div className="relative flex flex-col gap-10">
-          {/* connecting line */}
           <div className="absolute left-[17px] top-9 bottom-9 w-px bg-[var(--border)]" />
 
-          {/* Step 1 */}
           <Step number="1" title="Upload your data" active={!tableName} done={!!tableName}>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -168,7 +212,6 @@ function App() {
             )}
           </Step>
 
-          {/* Step 2 */}
           <Step number="2" title="Ask a question" active={!!tableName && !sql} done={!!sql}>
             <form onSubmit={handleAsk} className="relative">
               <div
@@ -188,7 +231,7 @@ function App() {
                 <button
                   type="submit"
                   disabled={!tableName || asking || !question.trim()}
-                  className="text-xs font-['Space_Grotesk'] font-semibold px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0B0E14] disabled:bg-[var(--border)] disabled:text-[var(--text-muted)] transition-colors"
+                  className="text-xs font-['Space_Grotesk'] font-semibold px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0A0A0A] disabled:bg-[var(--border)] disabled:text-[var(--text-muted)] transition-colors"
                 >
                   {asking ? "Running" : "Run"}
                 </button>
@@ -206,7 +249,6 @@ function App() {
             )}
           </Step>
 
-          {/* Step 3 */}
           {sql && (
             <Step number="3" title="Result" done>
               <div className="animate-in rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
@@ -254,6 +296,16 @@ function App() {
             </Step>
           )}
         </div>
+
+        <section id="about" className="mt-24 pt-10 border-t border-[var(--border)]">
+          <h2 className="font-['Space_Grotesk'] font-semibold text-xl mb-3">About</h2>
+          <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-xl">
+            AskSQL turns plain English questions into SQL queries and runs them
+            instantly against your uploaded data. Built with FastAPI, DuckDB,
+            and Groq's Llama 3.3 70B for natural language understanding — no
+            SQL knowledge required to explore your own datasets.
+          </p>
+        </section>
       </div>
     </div>
   );
