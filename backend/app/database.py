@@ -78,6 +78,49 @@ def load_uploaded_csv(conn, file_path: str, table_name: str) -> str:
     """)
     return table_name
 
+def load_uploaded_excel(conn, file_path: str, table_name: str) -> str:
+    """
+    Loads an Excel file (.xlsx or .xls) from disk into a DuckDB table.
+    Only the first sheet is loaded — multi-sheet support can be a
+    future enhancement.
+
+    Args:
+        conn: an active DuckDB connection.
+        file_path: path to the Excel file on disk.
+        table_name: sanitized table name to create/replace.
+
+    Returns:
+        The table name that was created.
+    """
+    import pandas as pd
+
+    if not is_valid_table_name(table_name):
+        raise ValueError(f"Invalid table name: {table_name}")
+
+    try:
+        df = pd.read_excel(file_path, sheet_name=0)
+    except Exception as e:
+        raise ValueError(f"Failed to read Excel file: {e}")
+
+    if df.empty:
+        raise ValueError("Excel sheet is empty.")
+
+    # Clean up column names the same way sanitize_table_name cleans filenames,
+    # so generated SQL doesn't choke on spaces/special characters in headers.
+    df.columns = [
+        re.sub(r"_+", "_", re.sub(r"[^a-z0-9_]+", "_", str(c).lower().strip())).strip("_")
+        or f"col_{i}"
+        for i, c in enumerate(df.columns)
+    ]
+
+    conn.register("temp_excel_df", df)
+    conn.execute(f"""
+        CREATE OR REPLACE TABLE {table_name} AS
+        SELECT * FROM temp_excel_df
+    """)
+    conn.unregister("temp_excel_df")
+    return table_name
+
 
 def list_tables(conn) -> list[str]:
     """Returns all user table names currently in the database."""

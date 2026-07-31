@@ -16,6 +16,7 @@ from .nl2sql import generate_sql, explain_sql
 from .database import  (
     get_connection,
     load_uploaded_csv,
+    load_uploaded_excel,
     sanitize_table_name,
     get_schema_string,
     list_tables,
@@ -125,15 +126,23 @@ def delete_table(table_name: str):
 @app.post("/upload")
 async def upload_csv(file: UploadFile = File(...)):
     """
-    Accepts a CSV file, saves it to disk, and loads it into a DuckDB table.
-    Returns the table name and its inferred schema.
+    Accepts a CSV or Excel (.xlsx/.xls) file, saves it to disk, and loads
+    it into a DuckDB table. Returns the table name and its inferred schema.
     """
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only .csv files are supported.")
+    filename_lower = file.filename.lower()
+    is_csv = filename_lower.endswith(".csv")
+    is_excel = filename_lower.endswith(".xlsx") or filename_lower.endswith(".xls")
+
+    if not (is_csv or is_excel):
+        raise HTTPException(
+            status_code=400,
+            detail="Only .csv, .xlsx, and .xls files are supported."
+        )
 
     # Enforce a max upload size by reading in chunks and counting bytes
     table_name = sanitize_table_name(file.filename)
-    save_path = os.path.join(UPLOAD_DIR, f"{table_name}.csv")
+    ext = os.path.splitext(filename_lower)[1]
+    save_path = os.path.join(UPLOAD_DIR, f"{table_name}{ext}")
 
     size = 0
     try:
@@ -155,13 +164,16 @@ async def upload_csv(file: UploadFile = File(...)):
 
     conn = get_connection()
     try:
-        load_uploaded_csv(conn, save_path, table_name)
+        if is_excel:
+            load_uploaded_excel(conn, save_path, table_name)
+        else:
+            load_uploaded_csv(conn, save_path, table_name)
         schema = get_schema_string(conn, table_name)
         row_count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to load CSV: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to load file: {e}")
     finally:
         conn.close()
 
