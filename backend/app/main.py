@@ -13,8 +13,10 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from .nl2sql import generate_sql, explain_sql
 
-from .database import  (
+from .database import (
     get_connection,
+    connect_postgres,
+    disconnect_postgres,
     load_uploaded_csv,
     load_uploaded_excel,
     sanitize_table_name,
@@ -62,6 +64,11 @@ class FeedbackRequest(BaseModel):
     sql: str
     table_name: str
     rating: str
+
+
+class ConnectDBRequest(BaseModel):
+    pg_url: str
+
 
 def is_safe_select(sql: str) -> bool:
     """
@@ -184,6 +191,47 @@ async def upload_csv(file: UploadFile = File(...)):
     }
 
 
+@app.post("/connect-db")
+async def connect_db(request: ConnectDBRequest):
+    """
+    Attaches an external Postgres database (e.g. a Neon connection string)
+    and exposes its public tables as local views, so /ask and /explain
+    work on them exactly like uploaded files.
+    """
+    if not request.pg_url or not request.pg_url.strip():
+        raise HTTPException(status_code=400, detail="Connection string cannot be empty.")
+
+    if not request.pg_url.startswith(("postgresql://", "postgres://")):
+        raise HTTPException(status_code=400, detail="Only postgresql:// connection strings are supported.")
+
+    try:
+        view_names = connect_postgres(request.pg_url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to connect: {e}")
+
+    if not view_names:
+        raise HTTPException(status_code=400, detail="Connected, but no tables found in the 'public' schema.")
+
+    conn = get_connection()
+    try:
+        return {
+            "connected": True,
+            "tables": [
+                {"table_name": t, "schema": get_schema_string(conn, t)}
+                for t in view_names
+            ],
+        }
+    finally:
+        conn.close()
+
+
+@app.post("/disconnect-db")
+async def disconnect_db():
+    """Forgets the currently connected Postgres database."""
+    disconnect_postgres()
+    return {"connected": False}
+
+
 @app.post("/ask")
 async def ask_question(request: AskRequest):
     """
@@ -257,6 +305,7 @@ async def ask_question(request: AskRequest):
         }
     finally:
         conn.close()
+
 
 @app.post("/explain")
 async def explain_question(request: AskRequest):
@@ -336,6 +385,7 @@ async def explain_question(request: AskRequest):
         }
     finally:
         conn.close()
+
 
 @app.post("/feedback")
 async def submit_feedback(request: FeedbackRequest):

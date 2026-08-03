@@ -14,12 +14,67 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 # Max rows returned by /ask, to avoid huge payloads from broad questions
 MAX_RESULT_ROWS = 1000
 
+# Currently attached external Postgres URL (in-memory only — lost on
+# server restart, since DuckDB re-runs ATTACH fresh on every new
+# connection rather than persisting it inside the .duckdb file).
+_CONNECTED_PG_URL: str | None = None
+
 
 def get_connection():
-    """Returns a DuckDB connection."""
+    """Returns a DuckDB connection, re-attaching Postgres if one is connected."""
     conn = duckdb.connect(DB_PATH)
+    if _CONNECTED_PG_URL:
+        _attach_postgres(conn, _CONNECTED_PG_URL)
     return conn
 
+def _attach_postgres(conn, pg_url: str) -> None:
+    """Installs the postgres extension and attaches pg_url as 'pgdb' (read-only)."""
+    conn.execute("INSTALL postgres;")
+    conn.execute("LOAD postgres;")
+    try:
+        conn.execute("DETACH pgdb")
+    except Exception:
+        pass  # wasn't attached yet on this connection, that's fine
+    conn.execute(f"ATTACH '{pg_url}' AS pgdb (TYPE postgres, READ_ONLY)")
+
+
+def sync_postgres_views(conn) -> list[str]:
+    """
+    Creates a local DuckDB view for every table in pgdb's 'public' schema,
+    named 'pg_<table>' so it passes is_valid_table_name() and works with
+    /ask exactly like an uploaded CSV table.
+    """
+    rows = conn.execute("""
+        SELECT table_name FROM pgdb.information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+    """).fetchall()
+
+    created = []
+    for (name,) in rows:
+        view_name = sanitize_table_name(f"pg_{name}")
+        conn.execute(f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM pgdb.{name}")
+        created.append(view_name)
+    return created
+
+
+def connect_postgres(pg_url: str) -> list[str]:
+    """Attaches an external Postgres DB, remembers it, and creates views for its tables."""
+    global _CONNECTED_PG_URL
+    conn = duckdb.connect(DB_PATH)
+    try:
+        _attach_postgres(conn, pg_url)
+        views = sync_postgres_views(conn)
+    finally:
+        conn.close()
+    _CONNECTED_PG_URL = pg_url
+    return views
+
+
+def disconnect_postgres() -> None:
+    """Forgets the connected Postgres DB (views already created still work until dropped)."""
+    global _CONNECTED_PG_URL
+    _CONNECTED_PG_URL = None
 
 def load_sample_data(conn):
     """Loads the fixed sample CSV files from data/ into DuckDB tables."""
