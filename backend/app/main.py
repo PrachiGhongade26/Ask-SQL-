@@ -180,7 +180,10 @@ async def upload_csv(file: UploadFile = File(...)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to load file: {e}")
+        raise HTTPException(
+    status_code=400,
+    detail=f"Unable to load the uploaded file. Error: {e}"
+)
     finally:
         conn.close()
 
