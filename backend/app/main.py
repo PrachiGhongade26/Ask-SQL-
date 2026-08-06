@@ -12,6 +12,7 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from .nl2sql import generate_sql, explain_sql
+from .templates import get_all_templates, get_templates_by_role
 
 from .database import (
     get_connection,
@@ -420,3 +421,16 @@ def feedback_stats():
         return get_feedback_stats(conn)
     finally:
         conn.close()
+@app.get("/templates")
+def list_templates():
+    """Return all role-based query templates."""
+    return get_all_templates()
+
+
+@app.get("/templates/{role_key}")
+def list_templates_for_role(role_key: str):
+    """Return templates for a single role."""
+    result = get_templates_by_role(role_key)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Role '{role_key}' not found")
+    return result
