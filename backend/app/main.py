@@ -4,7 +4,6 @@
 # TODO: add try/except around /ask for Groq API timeout/failure
 
 
-
 import os
 import re
 import shutil
@@ -13,6 +12,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from .nl2sql import generate_sql, explain_sql
 from .templates import get_all_templates, get_templates_by_role
+from .anomaly import detect_anomalies
 
 from .database import (
     get_connection,
@@ -31,8 +31,6 @@ from .database import (
     MAX_UPLOAD_SIZE,
     MAX_RESULT_ROWS,
 )
-
-from .nl2sql import generate_sql
 
 app = FastAPI()
 
@@ -82,7 +80,6 @@ def is_safe_select(sql: str) -> bool:
     if not re.match(r"(?is)^\s*(with|select)\b", stripped):
         return False
 
-    # Reject if a second statement is smuggled in after a semicolon
     if ";" in stripped:
         return False
 
@@ -147,7 +144,6 @@ async def upload_csv(file: UploadFile = File(...)):
             detail="Only .csv, .xlsx, and .xls files are supported."
         )
 
-    # Enforce a max upload size by reading in chunks and counting bytes
     table_name = sanitize_table_name(file.filename)
     ext = os.path.splitext(filename_lower)[1]
     save_path = os.path.join(UPLOAD_DIR, f"{table_name}{ext}")
@@ -182,9 +178,9 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(
-    status_code=400,
-    detail=f"Unable to load the uploaded file. Error: {e}"
-)
+            status_code=400,
+            detail=f"Unable to load the uploaded file. Error: {e}"
+        )
     finally:
         conn.close()
 
@@ -301,11 +297,14 @@ async def ask_question(request: AskRequest):
                 detail=f"Generated SQL failed to execute: {e}. SQL was: {sql}"
             )
 
+        anomalies = detect_anomalies(results)
+
         return {
             "question": request.question,
             "sql": sql,
             "results": results,
             "truncated": len(results) == MAX_RESULT_ROWS,
+            "anomalies": anomalies,
         }
     finally:
         conn.close()
@@ -421,6 +420,8 @@ def feedback_stats():
         return get_feedback_stats(conn)
     finally:
         conn.close()
+
+
 @app.get("/templates")
 def list_templates():
     """Return all role-based query templates."""
