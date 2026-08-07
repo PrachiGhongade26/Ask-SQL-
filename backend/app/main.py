@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from .nl2sql import generate_sql, explain_sql
 from .templates import get_all_templates, get_templates_by_role
 from .anomaly import detect_anomalies
+from .sql_dialects import validate_dialect, get_dialect_instruction, SUPPORTED_DIALECTS
 
 from .database import (
     get_connection,
@@ -56,6 +57,7 @@ finally:
 class AskRequest(BaseModel):
     table_name: str
     question: str
+    dialect: str = "duckdb"  # duckdb | postgres | mysql | bigquery
 
 
 class FeedbackRequest(BaseModel):
@@ -93,6 +95,12 @@ def is_safe_select(sql: str) -> bool:
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "AskSQL backend is running"}
+
+
+@app.get("/dialects")
+def get_supported_dialects():
+    """Lists the SQL dialects /ask and /explain can generate for."""
+    return {"dialects": SUPPORTED_DIALECTS}
 
 
 @app.get("/tables")
@@ -236,14 +244,19 @@ async def disconnect_db():
 async def ask_question(request: AskRequest):
     """
     Takes a natural language question about an uploaded table, converts it
-    to SQL via Groq, runs it against DuckDB, and returns both the SQL and
-    the query results.
+    to SQL (in the requested dialect) via Groq, runs it against DuckDB, and
+    returns both the SQL and the query results.
     """
     if not is_valid_table_name(request.table_name):
         raise HTTPException(status_code=400, detail="Invalid table name.")
 
     if not request.question or not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    try:
+        dialect = validate_dialect(request.dialect)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     conn = get_connection()
     try:
@@ -255,15 +268,17 @@ async def ask_question(request: AskRequest):
             )
 
         schema = get_schema_string(conn, request.table_name)
+        dialect_instruction = get_dialect_instruction(dialect)
 
         try:
-            generation_result = generate_sql(request.question, schema)
+            generation_result = generate_sql(request.question, schema, dialect_instruction=dialect_instruction)
         except RuntimeError as e:
             raise HTTPException(status_code=502, detail=f"SQL generation failed: {e}")
 
         if generation_result["confidence"] == "low":
             return {
                 "question": request.question,
+                "dialect": dialect,
                 "sql": None,
                 "results": [],
                 "clarifying_question": generation_result["clarifying_question"],
@@ -275,6 +290,7 @@ async def ask_question(request: AskRequest):
         if not sql:
             return {
                 "question": request.question,
+                "dialect": dialect,
                 "sql": None,
                 "results": [],
                 "message": "The question could not be answered with the available data.",
@@ -286,26 +302,40 @@ async def ask_question(request: AskRequest):
                 detail=f"Generated query was rejected for safety reasons. SQL was: {sql}"
             )
 
-        try:
-            result = conn.execute(f"SELECT * FROM ({sql}) LIMIT {MAX_RESULT_ROWS}")
-            columns = [desc[0] for desc in result.description]
-            rows = result.fetchall()
-            results = [dict(zip(columns, row)) for row in rows]
-        except Exception as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Generated SQL failed to execute: {e}. SQL was: {sql}"
-            )
+        # Only duckdb and postgres dialects execute here: postgres tables are
+        # ATTACH'd as DuckDB views (see connect_postgres), so DuckDB can run
+        # them directly. True MySQL/BigQuery execution needs a live connector
+        # we haven't built yet, so we return the generated SQL only.
+        if dialect in ("duckdb", "postgres"):
+            try:
+                result = conn.execute(f"SELECT * FROM ({sql}) LIMIT {MAX_RESULT_ROWS}")
+                columns = [desc[0] for desc in result.description]
+                rows = result.fetchall()
+                results = [dict(zip(columns, row)) for row in rows]
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Generated SQL failed to execute: {e}. SQL was: {sql}"
+                )
 
-        anomalies = detect_anomalies(results)
+            anomalies = detect_anomalies(results)
 
-        return {
-            "question": request.question,
-            "sql": sql,
-            "results": results,
-            "truncated": len(results) == MAX_RESULT_ROWS,
-            "anomalies": anomalies,
-        }
+            return {
+                "question": request.question,
+                "dialect": dialect,
+                "sql": sql,
+                "results": results,
+                "truncated": len(results) == MAX_RESULT_ROWS,
+                "anomalies": anomalies,
+            }
+        else:
+            return {
+                "question": request.question,
+                "dialect": dialect,
+                "sql": sql,
+                "results": [],
+                "message": f"SQL generated in {dialect} syntax. Live execution for '{dialect}' isn't connected yet — this shows the translated query only.",
+            }
     finally:
         conn.close()
 

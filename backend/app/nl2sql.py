@@ -1,6 +1,7 @@
 """
 nl2sql.py
-Converts natural language questions into DuckDB-compatible SQL using the Groq API.
+Converts natural language questions into SQL (DuckDB by default, or another
+dialect if requested) using the Groq API.
 """
 
 import os
@@ -32,13 +33,15 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 # Prompt construction
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an expert SQL generator for DuckDB.
+SYSTEM_PROMPT = """You are an expert SQL generator.
+
+{dialect_instruction}
 
 You must respond with ONLY a single valid JSON object. No markdown fences, no explanations outside the JSON.
 
 The JSON must have exactly these fields:
 - "confidence": either "high" or "low"
-- "sql": the SQL query as a string (use DuckDB syntax, no trailing semicolon), or null if confidence is "low"
+- "sql": the SQL query as a string (follow the dialect instruction above, no trailing semicolon), or null if confidence is "low"
 - "clarifying_question": a short question to ask the user if confidence is "low", or null if confidence is "high"
 
 Rules:
@@ -60,10 +63,17 @@ Example response for a clear question:
 Example response for an ambiguous question:
 {{"confidence": "low", "sql": null, "clarifying_question": "When you say 'top performers', do you mean by sales amount, or by number of orders?"}}
 """
-def build_prompt(question: str, schema: str) -> list[dict]:
-    """Builds the Groq chat messages payload for a given question + schema."""
+
+DEFAULT_DIALECT_INSTRUCTION = "Use DuckDB SQL syntax."
+
+
+def build_prompt(question: str, schema: str, dialect_instruction: str = DEFAULT_DIALECT_INSTRUCTION) -> list[dict]:
+    """Builds the Groq chat messages payload for a given question + schema + dialect."""
     return [
-        {"role": "system", "content": SYSTEM_PROMPT.format(schema=schema)},
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT.format(schema=schema, dialect_instruction=dialect_instruction),
+        },
         {"role": "user", "content": question},
     ]
 
@@ -104,7 +114,12 @@ def clean_json_response(raw: str) -> dict:
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def generate_sql(question: str, schema: str, temperature: float = 0.1) -> dict:
+def generate_sql(
+    question: str,
+    schema: str,
+    temperature: float = 0.1,
+    dialect_instruction: str = DEFAULT_DIALECT_INSTRUCTION,
+) -> dict:
     """
     Converts a natural language question into a SQL query.
 
@@ -112,6 +127,8 @@ def generate_sql(question: str, schema: str, temperature: float = 0.1) -> dict:
         question: The user's natural language question.
         schema: A string describing table(s) and column(s).
         temperature: Lower = more deterministic SQL. Default 0.1 for consistency.
+        dialect_instruction: Syntax guidance for the target SQL dialect
+            (e.g. "Use PostgreSQL syntax: ..."). Defaults to DuckDB syntax.
 
     Returns:
         A dict with keys:
@@ -122,7 +139,7 @@ def generate_sql(question: str, schema: str, temperature: float = 0.1) -> dict:
     Raises:
         RuntimeError: if the Groq API call fails or returns invalid JSON.
     """
-    messages = build_prompt(question, schema)
+    messages = build_prompt(question, schema, dialect_instruction=dialect_instruction)
 
     try:
         response = client.chat.completions.create(
@@ -198,4 +215,12 @@ if __name__ == "__main__":
 
     print("\n--- Ambiguous question ---")
     result2 = generate_sql("Show me the top performers", test_schema)
-    print(result2) 
+    print(result2)
+
+    print("\n--- Postgres dialect ---")
+    result3 = generate_sql(
+        "What is the total sales amount by region for the year 2025?",
+        test_schema,
+        dialect_instruction="Use PostgreSQL syntax: double-quoted identifiers if needed, DATE_TRUNC() for date grouping, || for string concatenation, LIMIT n for row limits.",
+    )
+    print(result3)
