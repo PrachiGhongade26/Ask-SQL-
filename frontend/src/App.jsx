@@ -23,9 +23,29 @@ function Navbar({ theme, onToggleTheme }) {
           </a>
           <button
             onClick={onToggleTheme}
-            className="text-xs font-['Space_Grotesk'] font-semibold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+            className="w-8 h-8 rounded-lg border border-[var(--border)] text-[var(--text)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors flex items-center justify-center"
           >
-            {theme === "dark" ? "Light mode" : "Dark mode"}
+            {theme === "dark" ? (
+              // Sun icon (click to go light)
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <line x1="12" y1="2" x2="12" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="22" />
+                <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+                <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+                <line x1="2" y1="12" x2="4" y2="12" />
+                <line x1="20" y1="12" x2="22" y2="12" />
+                <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+                <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+              </svg>
+            ) : (
+              // Moon icon (click to go dark)
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
@@ -83,6 +103,60 @@ function App() {
   const [results, setResults] = useState(null);
   const [askError, setAskError] = useState(null);
   const [asking, setAsking] = useState(false);
+
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(true);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join("");
+      setQuestion(transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.stop();
+    };
+  }, []);
+
+  const handleToggleVoice = () => {
+    if (!recognitionRef.current || asking || !tableName) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setAskError(null);
+      setQuestion("");
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   const doUpload = async (file) => {
     if (!file) return;
@@ -225,9 +299,35 @@ function App() {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   disabled={!tableName || asking}
-                  placeholder={tableName ? "How many orders per region?" : "Upload a CSV first"}
+                  placeholder={
+                    isListening
+                      ? "Listening..."
+                      : tableName
+                      ? "How many orders per region?"
+                      : "Upload a CSV first"
+                  }
                   className="flex-1 bg-transparent outline-none text-sm font-['JetBrains_Mono'] placeholder:text-[var(--text-muted)]"
                 />
+                {voiceSupported && (
+                  <button
+                    type="button"
+                    onClick={handleToggleVoice}
+                    disabled={!tableName || asking}
+                    title={isListening ? "Stop listening" : "Ask by voice"}
+                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center border transition-colors disabled:opacity-40 ${
+                      isListening
+                        ? "border-red-400 text-red-400 animate-pulse"
+                        : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    }`}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={!tableName || asking || !question.trim()}
@@ -239,6 +339,11 @@ function App() {
             </form>
             {askError && (
               <p className="text-sm text-red-400 mt-3 font-['JetBrains_Mono']">{askError}</p>
+            )}
+            {!voiceSupported && (
+              <p className="text-[var(--text-muted)] text-xs mt-2 font-['JetBrains_Mono']">
+                Voice input isn't supported in this browser — try Chrome or Edge.
+              </p>
             )}
             {asking && (
               <div className="flex gap-1 mt-3 pl-1">
@@ -296,6 +401,7 @@ function App() {
             </Step>
           )}
         </div>
+        
 
         <section id="about" className="mt-24 pt-10 border-t border-[var(--border)]">
           <h2 className="font-['Space_Grotesk'] font-semibold text-xl mb-3">About</h2>
